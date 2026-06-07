@@ -11,8 +11,8 @@ function Header({ language, setLanguage, theme, setTheme }) {
 
   const title =
     language === 'en'
-      ? 'Crypto Tracker CI-CD live demo'
-      : 'Crypto Tracker CI-CD жива демонстрація';
+      ? 'Crypto Tracker CI-CD live 2demo'
+      : 'Crypto Tracker CI-CD жива 2демонстрація';
 
   const subtitle =
     language === 'en'
