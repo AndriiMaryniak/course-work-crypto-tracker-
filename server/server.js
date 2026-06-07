@@ -10,14 +10,10 @@ const app = express();
 
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_change_me';
-
-// ✅ ВИПРАВЛЕНО ЗА ЗАВДАННЯМ
-const dbURI =
-  process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/cryptodb';
+const dbURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/cryptodb';
 
 app.use(express.json());
 
-// CORS
 const allowedOriginRegexes = [
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
@@ -42,7 +38,6 @@ app.use(
   })
 );
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
@@ -51,7 +46,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// JWT token
 function createToken(user) {
   return jwt.sign(
     { userId: user._id, email: user.email },
@@ -60,17 +54,12 @@ function createToken(user) {
   );
 }
 
-// Auth middleware
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)
-    : null;
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({
-      message: 'Необхідна авторизація (немає токена).',
-    });
+    return res.status(401).json({ message: 'Необхідна авторизація (немає токена).' });
   }
 
   try {
@@ -78,52 +67,38 @@ async function authMiddleware(req, res, next) {
     const user = await User.findById(payload.userId);
 
     if (!user) {
-      return res.status(401).json({
-        message: 'Користувача не знайдено.',
-      });
+      return res.status(401).json({ message: 'Користувача не знайдено.' });
     }
 
     req.user = user;
     next();
   } catch (err) {
     console.error('Помилка authMiddleware:', err);
-    return res.status(401).json({
-      message: 'Невірний або прострочений токен.',
-    });
+    return res.status(401).json({ message: 'Невірний або прострочений токен.' });
   }
 }
 
-// ---------------- AUTH ----------------
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password } = req.body || {};
 
     if (!email || !password) {
-      return res.status(400).json({
-        message: 'Email і пароль є обовʼязковими.',
-      });
+      return res.status(400).json({ message: 'Email і пароль є обовʼязковими.' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-
     const existing = await User.findOne({ email: normalizedEmail });
+    
     if (existing) {
-      return res.status(400).json({
-        message: 'Користувач з таким email вже існує.',
-      });
+      return res.status(400).json({ message: 'Користувач з таким email вже існує.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-
     const user = await User.create({
       email: normalizedEmail,
       passwordHash,
       favorites: [],
-      settings: {
-        language: 'ua',
-        theme: 'dark',
-        currency: 'uah',
-      },
+      settings: { language: 'ua', theme: 'dark', currency: 'uah' },
     });
 
     const token = createToken(user);
@@ -138,9 +113,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
   } catch (err) {
     console.error('Помилка register:', err);
-    res.status(500).json({
-      message: 'Внутрішня помилка сервера.',
-    });
+    res.status(500).json({ message: 'Внутрішня помилка сервера.' });
   }
 });
 
@@ -149,25 +122,19 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body || {};
 
     if (!email || !password) {
-      return res.status(400).json({
-        message: 'Email і пароль є обовʼязковими.',
-      });
+      return res.status(400).json({ message: 'Email і пароль є обовʼязковими.' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-
     const user = await User.findOne({ email: normalizedEmail });
+    
     if (!user) {
-      return res.status(401).json({
-        message: 'Невірний email або пароль.',
-      });
+      return res.status(401).json({ message: 'Невірний email або пароль.' });
     }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
-      return res.status(401).json({
-        message: 'Невірний email або пароль.',
-      });
+      return res.status(401).json({ message: 'Невірний email або пароль.' });
     }
 
     const token = createToken(user);
@@ -182,20 +149,15 @@ app.post('/api/auth/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Помилка login:', err);
-    res.status(500).json({
-      message: 'Внутрішня помилка сервера.',
-    });
+    res.status(500).json({ message: 'Внутрішня помилка сервера.' });
   }
 });
 
-// ---------------- USER ----------------
 app.get('/api/user/me', authMiddleware, (req, res) => {
-  const user = req.user;
-
   res.json({
-    email: user.email,
-    favorites: user.favorites,
-    settings: user.settings,
+    email: req.user.email,
+    favorites: req.user.favorites,
+    settings: req.user.settings,
   });
 });
 
@@ -215,9 +177,7 @@ app.put('/api/user/settings', authMiddleware, async (req, res) => {
     );
 
     if (!updatedUser) {
-      return res.status(404).json({
-        message: 'Користувача не знайдено.',
-      });
+      return res.status(404).json({ message: 'Користувача не знайдено.' });
     }
 
     res.json({
@@ -227,9 +187,7 @@ app.put('/api/user/settings', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error('Помилка settings:', err);
-    res.status(500).json({
-      message: 'Не вдалося оновити налаштування.',
-    });
+    res.status(500).json({ message: 'Не вдалося оновити налаштування.' });
   }
 });
 
@@ -238,9 +196,7 @@ app.put('/api/user/favorites', authMiddleware, async (req, res) => {
     const { favorites } = req.body || {};
 
     if (!Array.isArray(favorites)) {
-      return res.status(400).json({
-        message: 'favorites має бути масивом.',
-      });
+      return res.status(400).json({ message: 'favorites має бути масивом.' });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -250,9 +206,7 @@ app.put('/api/user/favorites', authMiddleware, async (req, res) => {
     );
 
     if (!updatedUser) {
-      return res.status(404).json({
-        message: 'Користувача не знайдено.',
-      });
+      return res.status(404).json({ message: 'Користувача не знайдено.' });
     }
 
     res.json({
@@ -262,19 +216,15 @@ app.put('/api/user/favorites', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error('Помилка favorites:', err);
-    res.status(500).json({
-      message: 'Не вдалося оновити обрані монети.',
-    });
+    res.status(500).json({ message: 'Не вдалося оновити обрані монети.' });
   }
 });
 
-// ---------------- DB + SERVER START ----------------
 async function start() {
   mongoose
     .connect(dbURI)
     .then(() => {
       console.log('✅ Підключено до MongoDB');
-
       app.listen(PORT, '0.0.0.0', () => {
         console.log(`✅ Сервер запущено на порту ${PORT}`);
       });
