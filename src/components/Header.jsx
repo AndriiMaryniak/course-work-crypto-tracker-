@@ -11,8 +11,8 @@ function Header({ language, setLanguage, theme, setTheme }) {
 
   const title =
     language === 'en'
-      ? 'Web app for tracking cryptocurrency exchange rates'
-      : 'Веб-додаток для відслідковування курсу криптовалют';
+      ? 'Crypto Tracker CI-CD live demo'
+      : 'Crypto Tracker CI-CD жива демонстрація';
 
   const subtitle =
     language === 'en'
